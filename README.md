@@ -2,7 +2,7 @@
 Pixel Tracking module for Android
 
 ## Install
-Add to gradle
+Add to build.gradle
 ```groovy
 implementation "com.zing.zalo.zalosdk:pixel:+"
 ```
