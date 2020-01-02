@@ -1,0 +1,88 @@
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'maven-publish'
+import org.apache.tools.ant.taskdefs.condition.Os
+group = libGroup
+version = libVersion
+
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+bintray {
+    user = properties.getProperty("bintray.user")
+    key = properties.getProperty("bintray.apikey")
+    configurations = ['archives']
+    publish = true
+    override = true
+    pkg {
+        repo = bintrayRepo
+        name = bintrayName
+        userOrg = 'vng'
+        desc = libDesc
+        websiteUrl = siteUrl
+        issueTrackerUrl = issueUrl
+        vcsUrl = gitUrl
+        licenses = ['LGPL-3.0']
+        labels = ['ZaloSDK']
+        publicDownloadNumbers = true
+    }
+}
+
+install {
+    repositories.mavenInstaller {
+        pom {
+            project {
+                packaging 'aar'
+                name libName
+                artifactId libName
+                description libDesc
+                url siteUrl
+                licenses {
+                    license {
+                        name 'LGPL-3.0'
+                        url 'https://www.gnu.org/licenses/lgpl-3.0.en.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id 'liemvu'
+                        name 'Liem Vo'
+                        email 'liemvouy@gmail.com'
+                    }
+                }
+                scm {
+                    connection gitUrl
+                    developerConnection gitUrl
+                    url siteUrl
+
+                }
+            }
+        }
+    }
+}
+
+task sourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    failOnError = false
+    options.addStringOption('Xdoclint:none', '-quiet')
+    options.addStringOption('encoding', 'UTF-8')
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+task packageAndUpload(dependsOn: [build, bintrayUpload]) {
+    outputs.upToDateWhen { return false }
+}

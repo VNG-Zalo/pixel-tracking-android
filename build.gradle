@@ -1,0 +1,40 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+    repositories {
+        google()
+        jcenter()
+        
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.1.3'
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.0'
+        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1+"
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        jcenter()
+        
+    }
+}
+
+ext {
+    compileSdkVersion = 28
+    buildToolsVersion = '27.0.3'
+    targetSdkVersion = 28
+    minSdkVersion = 18
+    zdklibVersionCode = 241030
+    zdklibVersion = '2.4.1030'
+    bintrayRepo= 'ZaloSDK'
+    libGroup = 'com.zing.zalo.zalosdk' //group
+    siteUrl = 'https://github.com/VNG-Zalo/pixel-tracking-android'
+    gitUrl = 'https://github.com/VNG-Zalo/pixel-tracking-android.git'
+    issueUrl = 'https://github.com/VNG-Zalo/pixel-tracking-android/issues'
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

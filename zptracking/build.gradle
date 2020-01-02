@@ -1,0 +1,46 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion rootProject.ext.compileSdkVersion as Integer
+    buildToolsVersion rootProject.ext.buildToolsVersion as String
+
+    defaultConfig {
+        minSdkVersion rootProject.ext.minSdkVersion as Integer
+        targetSdkVersion rootProject.ext.targetSdkVersion as Integer
+        versionCode rootProject.ext.zdklibVersionCode
+        versionName rootProject.ext.zdklibVersion
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    testOptions {
+        unitTests.includeAndroidResources = true
+    }
+}
+
+
+ext {
+    bintrayName = 'com.zing.zalo.zalosdk.pixel'
+    libVersion = rootProject.ext.zdklibVersion
+    libName = 'pixel' //artifact id
+    libDesc = 'Pixel tracking'
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "com.zing.zalo.zalosdk:core:${rootProject.ext.zdklibVersion}"
+
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'androidx.test:core:1.1.0'
+    testImplementation "com.google.truth:truth:0.43"
+    testImplementation 'org.robolectric:robolectric:4.2'
+    testImplementation 'org.mockito:mockito-core:2.4.0'
+    testImplementation 'org.skyscreamer:jsonassert:1.5.0'
+}
+
+apply from: '../bintray.gradle'
