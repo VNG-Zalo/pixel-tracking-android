@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Log.setLogLevel(Log.VERBOSE);
-        tracker = Tracker.newInstance(this, 6486531153301779475L);
+        tracker = Tracker.newInstance(this, 6342418164282734099L);
 
         paramsLinearLayout = findViewById(R.id.params_linear_layout);
         txtEventName = findViewById(R.id.txt_event_name);
@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
         paramsLinearLayout.removeAllViewsInLayout();
         txtEventName.setText("");
         tracker.track(eventName, params);
-        Toast.makeText(this, "Event Queued!!", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Added event to queue!", Toast.LENGTH_SHORT).show();
     }
 
     public void onClickAddParams(View v) {

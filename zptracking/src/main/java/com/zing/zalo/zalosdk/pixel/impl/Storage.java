@@ -89,9 +89,9 @@ public class Storage implements IStorage {
 
     @Override
     public void removeEvents(List<Event> events) {
-        mEvents.removeAll(events);
-        mPendingDeleteEvents.removeAll(events);
         Log.v(LOG_TAG, "Remove %d events", events.size());
+        mPendingDeleteEvents.addAll(events);
+        mEvents.removeAll(events);
     }
 
     @Override

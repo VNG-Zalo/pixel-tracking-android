@@ -148,6 +148,7 @@ public class Tracker {
 
         DataProvider(Context context) {
             mContext = context;
+            globalId();
         }
 
         @Override

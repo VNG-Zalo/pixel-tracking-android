@@ -106,7 +106,10 @@ public class LogUploader implements ILogUploader {
                 req.addHeader("Content-Length", String.valueOf(body.length));
                 req.setBody(body);
 
-                int code = req.getResponseCode();
+                Log.v(LOG_TAG, src);
+
+                req.getResponse();
+                int code = req.liveResponseCode;
                 if(code != 200) {
                     Log.w(LOG_TAG, "Upload err with status code: %d, skip retry!", code);
 //                    return true;
