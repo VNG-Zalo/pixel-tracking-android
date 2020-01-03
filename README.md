@@ -1,14 +1,15 @@
 # pixel-tracking-android
 Pixel Tracking module for Android
 
+## Requirement 
+- Android v18+
+- Zalo SDK core lib v2.4.1030+
+- Permission "android.permission.INTERNET"
+
 ## Install
-Add to build.gradle
+- Add to build.gradle
 ```groovy
 implementation "com.zing.zalo.zalosdk:pixel:+"
-```
-Add to AndroidManifest.xml
-```xml
-<uses-permission android:name="android.permission.INTERNET" />
 ```
 
 ## Usage
