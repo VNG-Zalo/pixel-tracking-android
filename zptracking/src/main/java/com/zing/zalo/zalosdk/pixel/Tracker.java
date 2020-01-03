@@ -129,7 +129,7 @@ public class Tracker {
 
     /**
      * Set dispatch event interval (ms)
-     * @param interval default 120 * 1000
+     * @param interval default 60 * 1000
      */
     private void setDispatchInterval(long interval) {
         mTrackerImpl.setDispatchInterval(interval);
@@ -137,7 +137,7 @@ public class Tracker {
 
     /**
      * Set store event interval (ms)
-     * @param interval default 60 * 1000
+     * @param interval default 30 * 1000
      */
     private void setStoreInterval(long interval) {
         mTrackerImpl.setStoreInterval(interval);
