@@ -115,7 +115,7 @@ public class LogUploaderTest {
         assertThat(json.getString("pkg")).isEqualTo(packageName);
         assertThat(json.getString("model")).isEqualTo(DeviceHelper.getModel());
         assertThat(json.getString("brd")).isEqualTo(DeviceHelper.getBrand());
-        assertThat(json.getString("pl")).isEqualTo("2002");
+        assertThat(json.getString("pf")).isEqualTo("android");
         assertThat(json.getString("net")).isEqualTo(connectionType);
         assertThat(json.getString("osv")).isEqualTo(DeviceHelper.getOSVersion());
         assertThat(json.getString("sdkv")).isEqualTo(BuildConfig.VERSION_NAME);

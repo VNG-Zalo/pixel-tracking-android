@@ -18,6 +18,7 @@ import com.zing.zalo.zalosdk.pixel.abstracts.IStorage;
 import com.zing.zalo.zalosdk.pixel.abstracts.IZPTracker;
 import com.zing.zalo.zalosdk.pixel.model.Event;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
@@ -195,8 +196,9 @@ public class TrackerImpl implements IZPTracker, Handler.Callback, ILogUploaderCa
                     return false;
                 }
 
-                Log.v(LOG_TAG, "Dispatch %s events", mStorage.getEvents().size());
-                mLogUploader.upload(mStorage.getEvents(), mStorage.getAppId(), mStorage.getPixelId(),
+                List<Event> events = new ArrayList<>(mStorage.getEvents());
+                Log.v(LOG_TAG, "Dispatch %s events", events.size());
+                mLogUploader.upload(events, mStorage.getAppId(), mStorage.getPixelId(),
                         mIGlobalIdDProvider.globalId(), mIAdsIdProvider.getAdsId(), mStorage.getUserInfo(),
                         mContext.getPackageName(), DeviceHelper.getConnectionType(mContext),
                         mILocationProvider.getLocation(),this);

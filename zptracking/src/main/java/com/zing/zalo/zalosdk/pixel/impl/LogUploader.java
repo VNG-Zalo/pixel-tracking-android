@@ -31,7 +31,8 @@ public class LogUploader implements ILogUploader {
 
     @Override
     public void upload(List<Event> events, String appId, long pixelId, String globalId, String adsId,
-                       Bundle userInfo, String packageName, String connectionType, String location, ILogUploaderCallback callback) {
+                       Bundle userInfo, String packageName, String connectionType, String location,
+                       ILogUploaderCallback callback) {
         if(events.size() == 0) {
             Log.v(LOG_TAG, "No events to submit");
             return;
@@ -87,7 +88,7 @@ public class LogUploader implements ILogUploader {
                 json.put("ads_id", adsId);
                 json.put("model", DeviceHelper.getModel());
                 json.put("brd", DeviceHelper.getBrand());
-                json.put("pl", "2002");
+                json.put("pf", "android");
                 json.put("net", connectionType);
                 json.put("osv", DeviceHelper.getOSVersion());
                 json.put("sdkv", BuildConfig.VERSION_NAME);
