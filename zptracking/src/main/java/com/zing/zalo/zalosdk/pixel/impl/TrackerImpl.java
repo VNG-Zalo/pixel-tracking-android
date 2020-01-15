@@ -179,6 +179,7 @@ public class TrackerImpl implements IZPTracker, Handler.Callback, ILogUploaderCa
                 msg = mHandler.obtainMessage(ACT_DISPATCH_EVENTS);
                 msg.what = ACT_DISPATCH_EVENTS;
                 mHandler.sendMessage(msg);
+                return;
             }
         }
 
