@@ -13,6 +13,7 @@ import java.util.List;
 
 import static com.zing.zalo.zalosdk.pixel.ZPConstants.LOG_TAG;
 import static com.zing.zalo.zalosdk.pixel.ZPConstants.MAX_EVENT_STORED;
+import static com.zing.zalo.zalosdk.pixel.ZPConstants.MAX_EVENT_SUBMIT;
 
 /**
  * This class is not thread safe
@@ -67,8 +68,9 @@ public class Storage implements IStorage {
     }
 
     @Override
-    public List<Event> getEvents() {
-        return mEvents;
+    public List<Event> getEvents(int count) {
+        int size = Math.min(count, mEvents.size());
+        return new ArrayList<>(mEvents.subList(0, size));
     }
 
     @Override
@@ -82,6 +84,7 @@ public class Storage implements IStorage {
             res = mEvents.subList(0, overflow).toArray(res);
             for(Event e : res) {
                 mEvents.remove(e);
+                mPendingWriteEvents.remove(e);
                 mPendingDeleteEvents.add(e);
             }
         }

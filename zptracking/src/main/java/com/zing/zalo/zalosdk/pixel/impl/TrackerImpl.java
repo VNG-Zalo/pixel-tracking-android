@@ -18,14 +18,12 @@ import com.zing.zalo.zalosdk.pixel.abstracts.IStorage;
 import com.zing.zalo.zalosdk.pixel.abstracts.IZPTracker;
 import com.zing.zalo.zalosdk.pixel.model.Event;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import static com.zing.zalo.zalosdk.pixel.ZPConstants.DISPATCH_INTERVAL;
 import static com.zing.zalo.zalosdk.pixel.ZPConstants.LOG_TAG;
+import static com.zing.zalo.zalosdk.pixel.ZPConstants.MAX_EVENT_SUBMIT;
 import static com.zing.zalo.zalosdk.pixel.ZPConstants.STORE_INTERVAL;
 
 public class TrackerImpl implements IZPTracker, Handler.Callback, ILogUploaderCallback {
@@ -45,8 +43,6 @@ public class TrackerImpl implements IZPTracker, Handler.Callback, ILogUploaderCa
     private long mStoreInterval;
     private HandlerThread mThread;
     private Handler mHandler;
-    private Timer mDispatchTimer;
-    private Timer mStoreTimer;
 
     public TrackerImpl(Context context) {
         mDispatchInterval = DISPATCH_INTERVAL;
@@ -80,18 +76,12 @@ public class TrackerImpl implements IZPTracker, Handler.Callback, ILogUploaderCa
 
     public void setDispatchInterval(long dispatchInterval) {
         mDispatchInterval = dispatchInterval;
-        cancelDispatchTimer();
-
-        if(dispatchInterval <= 0) return;
-        scheduleDispatchTimer();
+        scheduleNextDispatch();
     }
 
     public void setStoreInterval(long storeInterval) {
         mStoreInterval = storeInterval;
-        cancelStoreTimer();
-
-        if(storeInterval <=0) return;
-        scheduleStoreTimer();
+        scheduleNextStore();
     }
 
     public void start() {
@@ -103,14 +93,14 @@ public class TrackerImpl implements IZPTracker, Handler.Callback, ILogUploaderCa
         }
 
         mHandler.sendEmptyMessage(ACT_LOAD_EVENTS);
-        scheduleDispatchTimer();
-        scheduleStoreTimer();
+        scheduleNextDispatch();
+        scheduleNextStore();
     }
 
     public void stop() {
         Log.v(LOG_TAG, "Stop tracker");
-        cancelStoreTimer();
-        cancelDispatchTimer();
+        mHandler.removeMessages(ACT_DISPATCH_EVENTS);
+        mHandler.removeMessages(ACT_STORE_EVENTS);
         mHandler.sendEmptyMessage(ACT_STORE_EVENTS);
         if(mThread != null) {
             mThread.quitSafely();
@@ -121,82 +111,27 @@ public class TrackerImpl implements IZPTracker, Handler.Callback, ILogUploaderCa
     public void track(String name, Map<String, Object> params) {
         Log.v(LOG_TAG, "track %s %s", name, params.toString());
         Event event = new Event(name, Utils.toJSON(params, "p"));
-        Message msg = new Message();
+        Message msg = mHandler.obtainMessage(ACT_PUSH_EVENT);
         msg.what = ACT_PUSH_EVENT;
         msg.obj = event;
         mHandler.sendMessage(msg);
-    }
-
-    private void cancelDispatchTimer() {
-        if(mDispatchTimer != null) {
-            Log.v(LOG_TAG, "cancel dispatch timer");
-            mDispatchTimer.cancel();
-            mDispatchTimer = null;
-        }
-    }
-
-    private void scheduleDispatchTimer() {
-        cancelDispatchTimer();
-
-        if(mDispatchInterval <= 0) {
-            return;
-        }
-
-        Log.v(LOG_TAG,"schedule dispatch timer");
-        try {
-            mDispatchTimer = new Timer();
-            mDispatchTimer.scheduleAtFixedRate(new TimerTask() {
-                @Override
-                public void run() {
-                    mHandler.sendEmptyMessage(ACT_DISPATCH_EVENTS);
-                }
-            }, mDispatchInterval, mDispatchInterval);
-        }
-        catch(Exception ignored){};
-    }
-
-    private void cancelStoreTimer() {
-        if(mStoreTimer != null) {
-            Log.v(LOG_TAG, "cancel store timer");
-            mStoreTimer.cancel();
-            mStoreTimer = null;
-        }
-    }
-
-    private void scheduleStoreTimer() {
-        cancelStoreTimer();
-
-        if(mStoreInterval <= 0) {
-            return;
-        }
-
-        Log.v(LOG_TAG,"schedule store timer");
-        try {
-            mStoreTimer = new Timer();
-            mStoreTimer.scheduleAtFixedRate(new TimerTask() {
-                @Override
-                public void run() {
-                    mHandler.sendEmptyMessage(ACT_STORE_EVENTS);
-                }
-            }, mStoreInterval, mStoreInterval);
-        }
-        catch(Exception ignored){};
     }
 
     @Override
     public boolean handleMessage(Message message) {
         switch (message.what) {
             case ACT_DISPATCH_EVENTS:{
-                if(mStorage.getEvents().size() == 0 ||
+                List<Event> events = mStorage.getEvents(MAX_EVENT_SUBMIT);
+                if(events.size() == 0 ||
                         TextUtils.isEmpty(mIGlobalIdDProvider.globalId())) {
-                    Log.v(LOG_TAG, "ACT_DISPATCH_EVENTS no submit: %d %b",
-                            mStorage.getEvents().size(),
+                    Log.v(LOG_TAG, "no submit: %d %b",
+                            events.size(),
                             TextUtils.isEmpty(mIGlobalIdDProvider.globalId())
                     );
+                    scheduleNextDispatch();
                     return false;
                 }
 
-                List<Event> events = new ArrayList<>(mStorage.getEvents());
                 Log.v(LOG_TAG, "Dispatch %s events", events.size());
                 mLogUploader.upload(events, mStorage.getAppId(), mStorage.getPixelId(),
                         mIGlobalIdDProvider.globalId(), mIAdsIdProvider.getAdsId(), mStorage.getUserInfo(),
@@ -216,6 +151,7 @@ public class TrackerImpl implements IZPTracker, Handler.Callback, ILogUploaderCa
                 break;
             case ACT_STORE_EVENTS:
                 mStorage.storeEvents();
+                scheduleNextStore();
                 break;
             default:
                 return false;
@@ -225,11 +161,45 @@ public class TrackerImpl implements IZPTracker, Handler.Callback, ILogUploaderCa
 
     @Override
     public void onCompleted(List<Event> events, boolean result) {
+        Message msg;
         if(result) {
-            Message msg = new Message();
+            mHandler.removeMessages(ACT_STORE_EVENTS);
+
+            msg = mHandler.obtainMessage(ACT_REMOVE_EVENTS);
             msg.what = ACT_REMOVE_EVENTS;
             msg.obj = events;
             mHandler.sendMessage(msg);
+
+            msg = mHandler.obtainMessage(ACT_STORE_EVENTS);
+            msg.what = ACT_STORE_EVENTS;
+            mHandler.sendMessage(msg);
+
+            if(events.size() >= MAX_EVENT_SUBMIT) {
+                mHandler.removeMessages(ACT_DISPATCH_EVENTS);
+                msg = mHandler.obtainMessage(ACT_DISPATCH_EVENTS);
+                msg.what = ACT_DISPATCH_EVENTS;
+                mHandler.sendMessage(msg);
+            }
+        }
+
+        scheduleNextDispatch();
+    }
+
+    private void scheduleNextDispatch() {
+        mHandler.removeMessages(ACT_DISPATCH_EVENTS);
+        if(mDispatchInterval > 0) {
+            Message msg = mHandler.obtainMessage(ACT_DISPATCH_EVENTS);
+            msg.what = ACT_DISPATCH_EVENTS;
+            mHandler.sendMessageDelayed(msg, mDispatchInterval);
+        }
+    }
+
+    private void scheduleNextStore() {
+        mHandler.removeMessages(ACT_STORE_EVENTS);
+        if(mStoreInterval > 0) {
+            Message msg = mHandler.obtainMessage(ACT_STORE_EVENTS);
+            msg.what = ACT_STORE_EVENTS;
+            mHandler.sendMessageDelayed(msg, mStoreInterval);
         }
     }
 }

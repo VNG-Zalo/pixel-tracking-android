@@ -10,7 +10,7 @@ public interface IStorage {
     String getAppId();
     long getPixelId();
     Bundle getUserInfo();
-    List<Event> getEvents();
+    List<Event> getEvents(int count);
 
     void addEvent(Event event);
     void removeEvents(List<Event> events);

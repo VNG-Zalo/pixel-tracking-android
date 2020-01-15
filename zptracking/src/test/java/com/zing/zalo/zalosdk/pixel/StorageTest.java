@@ -51,22 +51,23 @@ public class StorageTest {
 
     @Test
     public void addAndRemoveEvents() {
-        assertThat(mSut.getEvents().size()).isEqualTo(0);
+        assertThat(mSut.getEvents(10).size()).isEqualTo(0);
 
         mSut.addEvent(mEvents.get(0));
         mSut.addEvent(mEvents.get(1));
         mSut.addEvent(mEvents.get(2));
 
-        assertThat(mSut.getEvents().size()).isEqualTo(3);
+        List<Event> events = mSut.getEvents(2);
+        assertThat(events.size()).isEqualTo(2);
 
-        mSut.removeEvents(mEvents);
+        mSut.removeEvents(events);
 
-        assertThat(mSut.getEvents().size()).isEqualTo(0);
+        assertThat(mSut.getEvents(10).size()).isEqualTo(1);
     }
 
     @Test
     public void saveAndLoadEvents() {
-        assertThat(mSut.getEvents().size()).isEqualTo(0);
+        assertThat(mSut.getEvents(10).size()).isEqualTo(0);
 
         mSut.addEvent(mEvents.get(0));
         mSut.addEvent(mEvents.get(1));
@@ -76,6 +77,6 @@ public class StorageTest {
 
         mSut = new Storage(mContext, 123L);
         mSut.loadEvents();
-        assertThat(mSut.getEvents().size()).isEqualTo(3);
+        assertThat(mSut.getEvents(10).size()).isEqualTo(3);
     }
 }

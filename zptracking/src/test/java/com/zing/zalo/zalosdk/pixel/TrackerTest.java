@@ -40,6 +40,9 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.zing.zalo.zalosdk.pixel.ZPConstants.DISPATCH_INTERVAL;
+import static com.zing.zalo.zalosdk.pixel.ZPConstants.MAX_EVENT_SUBMIT;
+import static com.zing.zalo.zalosdk.pixel.ZPConstants.STORE_INTERVAL;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -57,6 +60,7 @@ public class TrackerTest {
     @Mock Handler mHandler;
     @Captor ArgumentCaptor<Event> mEventCaptor;
     @Captor ArgumentCaptor<ILogUploaderCallback> mCallbackCaptor;
+    @Captor ArgumentCaptor<Message> mMessageCaptor;
     private TrackerImpl mSut;
 
     private List<Event> mEvents;
@@ -150,10 +154,53 @@ public class TrackerTest {
         msg.what = TrackerImpl.ACT_DISPATCH_EVENTS;
         mSut.handleMessage(msg);
 
-        verify(mLogUploader, times(1)).upload(eq(mEvents), eq(appId), eq(pixelId), eq(globalId),
+        verify(mLogUploader).upload(eq(mEvents), eq(appId), eq(pixelId), eq(globalId),
                 eq(adsId), eq(userInfo), eq(packageName), eq(connectionType), eq(location), mCallbackCaptor.capture());
         mCallbackCaptor.getValue().onCompleted(mEvents, true);
-        verify(mStorage, times(1)).removeEvents(mEvents);
+        verify(mStorage).removeEvents(mEvents);
+        verify(mStorage).storeEvents();
+        verify(mHandler).sendMessageDelayed(
+                mMessageCaptor.capture(), eq(DISPATCH_INTERVAL));
+        Message value = mMessageCaptor.getValue();
+        assertThat(value.what).isEqualTo(TrackerImpl.ACT_DISPATCH_EVENTS);
+
+        verify(mHandler).sendMessageDelayed(
+                mMessageCaptor.capture(), eq(STORE_INTERVAL));
+        value = mMessageCaptor.getValue();
+        assertThat(value.what).isEqualTo(TrackerImpl.ACT_STORE_EVENTS);
+    }
+
+    @Test
+    public void dispatchEventsManyTimesSuccess() {
+        mEvents = new ArrayList<>();
+        for(int i=1; i<100; i++) {
+            Event e = new Event("event " + i, new JSONObject());
+            mEvents.add(e);
+        }
+
+        List<Event> events1 = mEvents.subList(0, MAX_EVENT_SUBMIT);
+        List<Event> events2 = mEvents.subList(MAX_EVENT_SUBMIT, mEvents.size());
+
+        mockStorageValidData();
+        when(mStorage.getEvents(eq(MAX_EVENT_SUBMIT)))
+                .thenReturn(events1)
+                .thenReturn(events2);
+
+        Message msg = new Message();
+        msg.what = TrackerImpl.ACT_DISPATCH_EVENTS;
+        mSut.handleMessage(msg);
+
+        verify(mLogUploader).upload(eq(events1), eq(appId), eq(pixelId), eq(globalId),
+                eq(adsId), eq(userInfo), eq(packageName), eq(connectionType), eq(location), mCallbackCaptor.capture());
+        mCallbackCaptor.getValue().onCompleted(events1, true);
+        verify(mStorage).removeEvents(events1);
+
+        verify(mLogUploader).upload(eq(events2), eq(appId), eq(pixelId), eq(globalId),
+                eq(adsId), eq(userInfo), eq(packageName), eq(connectionType), eq(location), mCallbackCaptor.capture());
+        mCallbackCaptor.getValue().onCompleted(events2, true);
+        verify(mStorage).removeEvents(events2);
+
+        verify(mStorage, times(2)).storeEvents();
     }
 
     @Test
@@ -170,7 +217,7 @@ public class TrackerTest {
     }
 
     private void mockStorageValidData() {
-        when(mStorage.getEvents()).thenReturn(mEvents);
+        when(mStorage.getEvents(any(Integer.class))).thenReturn(mEvents);
         when(mStorage.getAppId()).thenReturn(appId);
         when(mStorage.getPixelId()).thenReturn(pixelId);
         when(mStorage.getUserInfo()).thenReturn(userInfo);
@@ -210,5 +257,17 @@ public class TrackerTest {
                 return null;
             }
         });
+
+        when(mHandler.obtainMessage(any(Integer.class))).then(new Answer<Message>() {
+
+            @Override
+            public Message answer(InvocationOnMock invocation) throws Throwable {
+                int what = (int) invocation.getArguments()[0];
+                Message msg = new Message();
+                msg.what = what;
+                return msg;
+            }
+        });
     }
+    //test submit 50 1 lan
 }
